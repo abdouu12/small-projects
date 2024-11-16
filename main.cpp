@@ -14,13 +14,12 @@ void clear_consol(){
     cout << "\033[2J\033[1;1H"; 
 }
 int generate_random_number(int min, int max) {
-    // Random number generator initialization
-    random_device rd;  // Initialize a random device
-    mt19937 gen(rd()); // Initialize a Mersenne Twister pseudo-random generator
-    uniform_int_distribution<> dis(min, max);  // Uniform distribution between min and max
-
-    return dis(gen);  // Generate and return the random number
+    random_device rd;
+    mt19937 gen(rd());
+    uniform_int_distribution<> dis(min, max - 1); // max - 1 to avoid out-of-bounds
+    return dis(gen);
 }
+
 
 
 void user_input(string& input) {
@@ -72,24 +71,14 @@ vector<string> initialize_original_card(vector<string>& initial_card_holder,vect
     initial_card_holder.push_back(draw_deck[generate_random_number(1,draw_deck.size())]);
     return initial_card_holder;
 }
-vector<string> initialize_player_deck(vector<string>& player_deck,vector<string>& draw_deck) {
-    player_deck.push_back(draw_deck[generate_random_number(1,draw_deck.size())]);
-    player_deck.push_back(draw_deck[generate_random_number(1,draw_deck.size())]);
-    player_deck.push_back(draw_deck[generate_random_number(1,draw_deck.size())]);
-    player_deck.push_back(draw_deck[generate_random_number(1,draw_deck.size())]);
-    player_deck.push_back(draw_deck[generate_random_number(1,draw_deck.size())]);
+vector<string> initialize_deck(vector<string>& deck,vector<string>& draw_deck) {
+    deck.push_back(draw_deck[generate_random_number(1,draw_deck.size())]);
+    deck.push_back(draw_deck[generate_random_number(1,draw_deck.size())]);
+    deck.push_back(draw_deck[generate_random_number(1,draw_deck.size())]);
+    deck.push_back(draw_deck[generate_random_number(1,draw_deck.size())]);
+    deck.push_back(draw_deck[generate_random_number(1,draw_deck.size())]);
  
-    return player_deck;
-}
-vector<string> initialize_bot_deck(vector<string>& bot_deck,vector<string>& draw_deck) {
-    bot_deck.push_back(draw_deck[generate_random_number(1,draw_deck.size())]);
-    bot_deck.push_back(draw_deck[generate_random_number(1,draw_deck.size())]);
-    bot_deck.push_back(draw_deck[generate_random_number(1,draw_deck.size())]);
-    bot_deck.push_back(draw_deck[generate_random_number(1,draw_deck.size())]);
-    bot_deck.push_back(draw_deck[generate_random_number(1,draw_deck.size())]);
- 
-    return bot_deck;
-
+    return deck;
 }
 vector<string> initialize_drawing_deck(vector<string>& draw_deck, string add_card, string swap_card, string change_colour) {
     string colours[] = {"R","B","G","Y"};
@@ -107,18 +96,33 @@ vector<string> initialize_drawing_deck(vector<string>& draw_deck, string add_car
     return draw_deck; 
 }
 //special cards
-void change_colour(vector<string>& initial_card_holder){
+void change_colour(vector<string>& initial_card_holder,vector<string>& player_deck,vector<string>& bot_deck){
     custom_print("what colour? R,B,Y,G");
     char colour_input;
     cin >> colour_input;
     string card = initial_card_holder[0];
     card[0] = colour_input;
     initial_card_holder[0] = card[0];
+    auto container = find(player_deck.begin(),player_deck.end(),"wild");
+    if (container != player_deck.end()){
+        remove_card(player_deck,"wild");
+    }
+    else if (container != bot_deck.end()) {
+        remove_card(bot_deck,"wild");
+    }
     
 }
-void plus_card(vector<string>& bot_deck,vector<string>& draw_deck){
+void plus_card(vector<string>& player_deck,vector<string>& bot_deck,vector<string>& draw_deck){
     bot_deck.push_back(draw_deck[0]);
     bot_deck.push_back(draw_deck[0]);
+
+    auto container = find(player_deck.begin(),player_deck.end(),"add");
+    if (container != player_deck.end()){
+        remove_card(player_deck,"add");
+    }
+    else if (container != bot_deck.end()) {
+        remove_card(bot_deck,"add");
+    }
 
 }
 void swap_cards(vector<string>& player_deck,vector<string>& bot_deck) {
@@ -159,6 +163,16 @@ void game_over(vector<string>& player_deck,bool& gamerunning,vector<string>& bot
         gamerunning = false;
     }
 }
+void swap_bot_logic(){
+
+}
+void wild_card_bot_logic() {
+
+}
+void add_card_bot_logic() {
+
+}
+
 void bot_logic(vector<string>& bot_deck, vector<string>& initial_card_holder, vector<string>& draw_deck) {
     string card = initial_card_holder[0];
     char card_color = card[0];
@@ -192,10 +206,11 @@ int main () {
     vector<string> bot_deck;
     vector<string> initial_card_holder;
     initialize_drawing_deck(draw_deck,add_card,swap_card,wild_card);
-    initialize_player_deck(player_deck,draw_deck);
+    initialize_deck(player_deck,draw_deck);
+    initialize_deck(bot_deck,draw_deck);
     initialize_original_card(initial_card_holder,draw_deck);
-    initialize_bot_deck(bot_deck,draw_deck);
     display_deck(player_deck);
+    display_deck(bot_deck);
     while (gamerunning) {
         shuffle_deck(draw_deck);
         //start of turn 
@@ -220,8 +235,9 @@ int main () {
         custom_print("these are your cards");
         display_deck(player_deck);
         custom_print("this is the bot card");
-        display_deck(bot_deck);
+       
         bot_logic(bot_deck,initial_card_holder,draw_deck);
+        display_deck(bot_deck);
         game_over(player_deck,gamerunning,bot_deck);
 
     }
@@ -232,7 +248,7 @@ void special_card_logic(std::string &input, std::string &add_card, std::vector<s
 {
     if (input == add_card)
     {
-        plus_card(player_deck, draw_deck);
+        plus_card(player_deck,bot_deck, draw_deck);
     }
     else if (input == swap_card)
     {
@@ -240,6 +256,6 @@ void special_card_logic(std::string &input, std::string &add_card, std::vector<s
     }
     else if (input == wild_card)
     {
-        change_colour(initial_card_holder);
+        change_colour(initial_card_holder,player_deck,bot_deck);
     }
 }
