@@ -5,6 +5,7 @@
 #include <ctime>
 #include <random>
 #include <algorithm>
+#include "main.h"
 using namespace std;
 void custom_print(string var){
     cout << "-" << var << "\n";
@@ -26,7 +27,7 @@ void user_input(string& input) {
     custom_print("move");
     cin >> input;
 }
-void remove_card (vector<string>& deck, string& input){
+void remove_card (vector<string>& deck, string input){
     int index;
     for (int i = 0; i < deck.size(); i++) {
         if (input == deck[i]) {
@@ -44,12 +45,29 @@ void shuffle_deck(vector<string>& draw_deck) {
 }
 
 void display_deck(vector<string>& deck) {
-    for (int i = 0; i< deck.size(); i++)
-    {
+for (int i = 0; i < deck.size(); i++) {
+    string card = deck[i];  
+    char card_colour = card[0];  
+
+    if (card_colour == 'R') {
+        cout << "\033[31m" << card << "\033[0m" << " ";  // Red
+    }
+    else if (card_colour == 'B') {
+        cout << "\033[34m" << card << "\033[0m" << " ";  // Blue
+    }
+    else if (card_colour == 'Y') {
+        cout << "\033[33m" << card << "\033[0m" << " ";  // Yellow
+    }
+    else if (card_colour == 'G') {
+        cout << "\033[32m" << card << "\033[0m" << " ";  // Green
+    }
+    else{
         cout << deck[i] << " ";
     }
-    cout << "\n";
 }
+cout << "\n";
+}
+
 vector<string> initialize_original_card(vector<string>& initial_card_holder,vector<string>& draw_deck) {
     initial_card_holder.push_back(draw_deck[generate_random_number(1,draw_deck.size())]);
     return initial_card_holder;
@@ -73,13 +91,19 @@ vector<string> initialize_bot_deck(vector<string>& bot_deck,vector<string>& draw
     return bot_deck;
 
 }
-vector<string> initialize_drawing_deck(vector<string>& draw_deck) {
+vector<string> initialize_drawing_deck(vector<string>& draw_deck, string add_card, string swap_card, string change_colour) {
     string colours[] = {"R","B","G","Y"};
     for (int i = 0; i< 4; i++) {
         for (int j = 0; j< 10; j++) {
         draw_deck.push_back(colours[i] + to_string(j));
         }
     }
+    draw_deck.push_back(add_card);
+    draw_deck.push_back(add_card);
+    draw_deck.push_back(change_colour);
+    draw_deck.push_back(change_colour);
+    draw_deck.push_back(swap_card);
+    draw_deck.push_back(swap_card);
     return draw_deck; 
 }
 //special cards
@@ -92,11 +116,22 @@ void change_colour(vector<string>& initial_card_holder){
     initial_card_holder[0] = card[0];
     
 }
-void plus_card(){
+void plus_card(vector<string>& bot_deck,vector<string>& draw_deck){
+    bot_deck.push_back(draw_deck[0]);
+    bot_deck.push_back(draw_deck[0]);
 
 }
-void swap_cards() {
-
+void swap_cards(vector<string>& player_deck,vector<string>& bot_deck) {
+    vector<string> temp = player_deck;
+    player_deck = bot_deck;
+    bot_deck = temp;
+    auto container = find(player_deck.begin(),player_deck.end(),"swap");
+    if (container != player_deck.end()){
+        remove_card(player_deck,"swap");
+    }
+    else if (container != bot_deck.end()) {
+        remove_card(bot_deck,"swap");
+    }
 }
 //checks
 bool match_card(vector<string>& initial_card_holder, string& input, vector<string>& player_deck) {
@@ -149,11 +184,14 @@ void bot_logic(vector<string>& bot_deck, vector<string>& initial_card_holder, ve
 int main () {
     bool gamerunning = true;
     string input;
+    string wild_card = "wild";
+    string add_card=  "add";
+    string swap_card ="swap";
     vector<string> player_deck;
     vector<string> draw_deck;
     vector<string> bot_deck;
     vector<string> initial_card_holder;
-    initialize_drawing_deck(draw_deck);
+    initialize_drawing_deck(draw_deck,add_card,swap_card,wild_card);
     initialize_player_deck(player_deck,draw_deck);
     initialize_original_card(initial_card_holder,draw_deck);
     initialize_bot_deck(bot_deck,draw_deck);
@@ -164,24 +202,23 @@ int main () {
         custom_print("here is the original card, you can start!");
         display_deck(initial_card_holder);     
         
-
         user_input(input);
+        special_card_logic(input, add_card, player_deck, draw_deck, swap_card, bot_deck, wild_card, initial_card_holder);
+
         if (match_card(initial_card_holder,input,player_deck) ){
             remove_card(player_deck,input);
             initial_card_holder[0] = input;
         }
-        else{
-            custom_print("card doesn't match, draw card if you don't have any!");
+        else if (input == "d"){
             draw_a_card(player_deck,draw_deck);
         }
         if (draw_deck.empty()) {
-            initialize_drawing_deck(draw_deck);
+            initialize_drawing_deck(draw_deck,add_card,swap_card,wild_card);
         }
         //end of turn
         clear_consol();
         custom_print("these are your cards");
         display_deck(player_deck);
-
         custom_print("this is the bot card");
         display_deck(bot_deck);
         bot_logic(bot_deck,initial_card_holder,draw_deck);
@@ -190,4 +227,19 @@ int main () {
     }
     
     return 0;
+}
+void special_card_logic(std::string &input, std::string &add_card, std::vector<std::string> &player_deck, std::vector<std::string> &draw_deck, std::string &swap_card, std::vector<std::string> &bot_deck, std::string &wild_card, std::vector<std::string> &initial_card_holder)
+{
+    if (input == add_card)
+    {
+        plus_card(player_deck, draw_deck);
+    }
+    else if (input == swap_card)
+    {
+        swap_cards(player_deck, bot_deck);
+    }
+    else if (input == wild_card)
+    {
+        change_colour(initial_card_holder);
+    }
 }
