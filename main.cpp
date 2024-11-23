@@ -140,16 +140,9 @@ void plus_card(vector<string>& player_deck,vector<string>& bot_deck,vector<strin
 
 }
 void swap_cards(vector<string>& player_deck,vector<string>& bot_deck) {
-    vector<string> temp = player_deck;
-    player_deck = bot_deck;
-    bot_deck = temp;
+    swap(player_deck, bot_deck);
     auto container = find(player_deck.begin(),player_deck.end(),"swap");
-    if (container != player_deck.end()){
-        remove_card(player_deck,"swap");
-    }
-    else if (container != bot_deck.end()) {
-        remove_card(bot_deck,"swap");
-    }
+    player_deck.erase(container);
 }
 //checks
 bool match_card(vector<string>& initial_card_holder, string& input, vector<string>& player_deck) {
@@ -179,13 +172,9 @@ void game_over(vector<string>& player_deck,bool& gamerunning,vector<string>& bot
 }
 //bot logic
 void swap_bot_logic(vector<string>& player_deck,vector<string>& bot_deck){
-
+    custom_print("the bot swapped your cards with his!");
+    swap(player_deck, bot_deck);
     
-        custom_print("the bot swapped your cards with his!");
-        vector<string> temp = player_deck;
-        player_deck = bot_deck;
-        bot_deck = temp;
-        
 }
 void wild_card_bot_logic(vector<string>& initial_card_holder,vector<string>& bot_deck,vector<string>& player_deck) {
     string initial_card = initial_card_holder[0];
@@ -200,15 +189,18 @@ void wild_card_bot_logic(vector<string>& initial_card_holder,vector<string>& bot
         count++;
         } 
     }
-    if (count == WILD_CARD_THRESHOLD) {
-        char majority_color = findMajorityColor(bot_deck)[0];
-        initial_card_colour = majority_color;
+    if (count >= WILD_CARD_THRESHOLD) {
+    char majority_color = findMajorityColor(bot_deck)[0];
+    initial_card_holder[0][0] = majority_color;
     }
+
 }
 void add_card_bot_logic(vector<string>& player_deck,vector<string>& bot_deck, vector<string>& draw_deck) {
-        player_deck.push_back(draw_deck[0]);
-        player_deck.push_back(draw_deck[1]);
-        
+    if (draw_deck.size() >= 2) {
+    player_deck.push_back(draw_deck[0]);
+    player_deck.push_back(draw_deck[1]);
+    draw_deck.erase(draw_deck.begin(), draw_deck.begin() + 2);
+    }
 }
 
 void bot_logic(vector<string>& bot_deck, vector<string>& initial_card_holder, vector<string>& draw_deck,vector<string>& player_deck) {
