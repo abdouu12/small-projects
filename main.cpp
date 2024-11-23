@@ -180,25 +180,29 @@ void game_over(vector<string>& player_deck,bool& gamerunning,vector<string>& bot
 //bot logic
 void swap_bot_logic(vector<string>& player_deck,vector<string>& bot_deck){
 
-    if (player_deck.size()>bot_deck.size()) {
+    
         custom_print("the bot swapped your cards with his!");
-        swap_cards(player_deck, bot_deck);
-    }
+        vector<string> temp = player_deck;
+        player_deck = bot_deck;
+        bot_deck = temp;
+        
 }
 void wild_card_bot_logic(vector<string>& initial_card_holder,vector<string>& bot_deck,vector<string>& player_deck) {
     string initial_card = initial_card_holder[0];
-
+    constexpr double MISMATCH_RATIO = 0.5; 
+    int WILD_CARD_THRESHOLD = max(2, static_cast<int>(bot_deck.size() * MISMATCH_RATIO));
     char initial_card_colour = initial_card[0];
     int count = 0;
     for (int i=0; i<bot_deck.size();i++) {
-        string bot_card = bot_deck[0];
+        string bot_card = bot_deck[i];
         char bot_card_colour = bot_card[0];
         if (bot_card_colour != initial_card_colour) {
         count++;
         } 
     }
-    if (count == 3) {
-        initial_card_colour = findMajorityColor(bot_deck)[0];
+    if (count == WILD_CARD_THRESHOLD) {
+        char majority_color = findMajorityColor(bot_deck)[0];
+        initial_card_colour = majority_color;
     }
 }
 void add_card_bot_logic(vector<string>& player_deck,vector<string>& bot_deck, vector<string>& draw_deck) {
@@ -208,35 +212,52 @@ void add_card_bot_logic(vector<string>& player_deck,vector<string>& bot_deck, ve
 }
 
 void bot_logic(vector<string>& bot_deck, vector<string>& initial_card_holder, vector<string>& draw_deck,vector<string>& player_deck) {
-    auto it_swap = find(bot_deck.begin(),bot_deck.end(),"swap");
+    
     auto it_wild = find(bot_deck.begin(),bot_deck.end(),"wild");
-    auto it_add = find(bot_deck.begin(),bot_deck.end(),"add");
+    
     string card = initial_card_holder[0];
     char card_color = card[0];
     char card_number = card[1];
     int count = 0;
+    //loop for swap cards:
+    if (player_deck.size()>bot_deck.size()) {
+        auto it_swap = find(bot_deck.begin(),bot_deck.end(),"swap");
+        for (int i = 0 ; i < bot_deck.size(); i++) {
+            if (it_swap != bot_deck.end()) {
+            swap_bot_logic(player_deck,bot_deck);
+            bot_deck.erase(it_swap);
+            return;
+        }
+        }
+    }
+    //loop and look for adding cards:
+    for (int i = 0 ; i < bot_deck.size(); i++) {
+        auto it_add = find(bot_deck.begin(),bot_deck.end(),"add");
+        if (it_add != bot_deck.end()) {
+        custom_print("yo the bot added two cards to your deck");
+        add_card_bot_logic(player_deck,bot_deck,draw_deck);
+        bot_deck.erase(it_add);
+        return;
+        }
+    }
+
     for (int i = 0; i < bot_deck.size(); i++) {
+
         string bot_card = bot_deck[i];
         char bot_colr = bot_card[0];
         char bot_num = bot_card[1];
-        if (it_add != bot_deck.end()){
-            add_card_bot_logic(player_deck,bot_deck,draw_deck);
-            return;
-        }
-        if (it_swap != bot_deck.end()) {
-            swap_bot_logic(player_deck,bot_deck);
-            return;
-        }
+        
         if (card_color == bot_colr || card_number == bot_num) {
             initial_card_holder[0] = bot_deck[i];
-            bot_deck.erase(bot_deck.begin() + i);
+            bot_deck.erase(bot_deck.begin() + i);  
             count++;
-            return;
         } 
+        
     }
     if (count == 0) {
         if(it_wild != bot_deck.end()) {
             wild_card_bot_logic(initial_card_holder,bot_deck,player_deck);
+            bot_deck.erase(it_wild);
         }
         else {
         bot_deck.push_back(draw_deck[0]);
@@ -260,7 +281,9 @@ int main () {
     initialize_deck(player_deck,draw_deck);
     initialize_deck(bot_deck,draw_deck);
     initialize_original_card(initial_card_holder,draw_deck);
+    custom_print("these are your cards");
     display_deck(player_deck);
+    custom_print("this is the bot card");
     display_deck(bot_deck);
     while (gamerunning) {
         shuffle_deck(draw_deck);
